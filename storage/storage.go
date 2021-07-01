@@ -1,6 +1,16 @@
 package storage
 
-import "time"
+import (
+	"time"
+)
+
+type LinkError struct {
+	Msg string
+}
+
+func (l *LinkError) Error() string {
+	return l.Msg
+}
 
 type Service interface {
 	Save(string, time.Time) (string, error)

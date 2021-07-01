@@ -61,6 +61,27 @@ func (c *client) Save(url string, expires time.Time) (string, error) {
 	return base62.Encode(id), nil
 }
 
+func (c *client) Load(code string) (string, error) {
+	conn := c.pool.Get()
+	defer conn.Close()
+
+	decodedId, err := base62.Decode(code)
+	if err != nil {
+		return "", err
+	}
+
+	urlString, err := redis.String(conn.Do("HGET", "Shortener:"+strconv.FormatUint(decodedId, 10), "url"))
+	if err != nil {
+		return "", err
+	} else if len(urlString) == 0 {
+		return "", &storage.LinkError{"Sorry that link does not"}
+	}
+
+	_, err = conn.Do("HINCRBY", "Shortener:"+strconv.FormatUint(decodedId, 10), "visits", 1)
+
+	return urlString, nil
+}
+
 func (c *client) Close() error {
 	return c.pool.Close()
 }
