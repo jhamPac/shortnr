@@ -1,4 +1,4 @@
-package client
+package redis
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/jhampac/shortnr/storage"
 )
 
-type Client struct {
+type client struct {
 	pool *redis.Pool
 }
 
@@ -20,5 +20,9 @@ func New(host, port, password string) (storage.Service, error) {
 			return redis.Dial("tcp", fmt.Sprintf("%s:%s", host, port))
 		},
 	}
-	return &Client{pool}, nil
+	return &client{pool}, nil
+}
+
+func (c *client) Close() error {
+	return c.pool.Close()
 }
