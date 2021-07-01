@@ -2,6 +2,7 @@ package redis
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"strconv"
 	"time"
@@ -48,9 +49,13 @@ func (c *client) Save(url string, expires time.Time) (string, error) {
 		id = rand.Uint64()
 	}
 
-	shortLink := storage.Item{id, url, expires.Format(time.UnixDate), 0}
+	shortLink := storage.Item{Id: id, URL: url, Expires: expires.Format(time.UnixDate), Visits: 0}
 
 	_, err := conn.Do("HMSET", redis.Args{"Shortener:" + strconv.FormatUint(id, 10)}.AddFlat(shortLink)...)
+
+	if err != nil {
+		log.Println(err)
+	}
 
 	_, err = conn.Do("EXPIREAT", "Shortener:"+strconv.FormatUint(id, 10), expires.Unix())
 
@@ -74,12 +79,20 @@ func (c *client) Load(code string) (string, error) {
 	if err != nil {
 		return "", err
 	} else if len(urlString) == 0 {
-		return "", &storage.LinkError{"Sorry that link does not"}
+		return "", &storage.LinkError{Msg: "Sorry that link does not"}
 	}
 
 	_, err = conn.Do("HINCRBY", "Shortener:"+strconv.FormatUint(decodedId, 10), "visits", 1)
 
+	if err != nil {
+		log.Println(err)
+	}
+
 	return urlString, nil
+}
+
+func (c *client) LoadInfo(info string) (*storage.Item, error) {
+	return &storage.Item{}, nil
 }
 
 func (c *client) Close() error {
