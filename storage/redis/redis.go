@@ -91,8 +91,29 @@ func (c *client) Load(code string) (string, error) {
 	return urlString, nil
 }
 
-func (c *client) LoadInfo(info string) (*storage.Item, error) {
-	return &storage.Item{}, nil
+func (c *client) LoadInfo(code string) (*storage.Item, error) {
+	conn := c.pool.Get()
+	defer conn.Close()
+
+	decodedId, err := base62.Decode(code)
+	if err != nil {
+		return nil, err
+	}
+
+	values, err := redis.Values(conn.Do("HGETALL", "Shortener:"+strconv.FormatUint(decodedId, 10)))
+	if err != nil {
+		return nil, err
+	} else if len(values) == 0 {
+		return nil, &storage.LinkError{Msg: "Sorry no values at that id"}
+	}
+
+	var shortLink storage.Item
+	err = redis.ScanStruct(values, &shortLink)
+	if err != nil {
+		return nil, err
+	}
+
+	return &shortLink, nil
 }
 
 func (c *client) Close() error {
