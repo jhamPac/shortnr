@@ -42,5 +42,6 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func encodeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Coming soon")
+	w.Header().Set("Content-Type", "plain/text")
+	w.Write([]byte("Coming soon"))
 }
